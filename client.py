@@ -4,14 +4,20 @@ import os
 import sys
 
 def recovery_message(client_socket):
-    while True:
-        try:
+    try:
+        while True:
+        
             data = client_socket.recv(1024)
             if not data:
                 break
             print(data.decode('utf-8'))
-        except:
-            break
+            
+    except:
+        pass
+    
+    finally:
+        print("\nСоединение с сервером потеряно")
+        os._exit(0)
 
 def send_message(client_socket):
 
