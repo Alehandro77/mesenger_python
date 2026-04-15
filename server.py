@@ -4,16 +4,24 @@ import threading
 clients = []
 clients_lock = threading.Lock()
 
+def broadcast(message, send_socket=None):
+    with clients_lock:
+        copy_clients = clients.copy()
+
+    for client in copy_clients:
+        if client == send_socket:
+            continue
+        try:
+            client.send(message.encode('utf-8'))
+        except:
+            pass
+
 def handle_client(client_socket, client_address):
 
     name = client_socket.recv(1024).decode('utf-8')
 
     print(f'Клиент {name} подключён')
-
-    for client in clients:
-        if client == client_socket:
-                continue
-        client.send(f'{name} подключился'.encode('utf-8'))
+    broadcast(f'{name} подключился', client_socket)
 
     client_socket.send(f'Добро пожаловать в чат {name}!'.encode('utf-8'))
 
@@ -25,26 +33,19 @@ def handle_client(client_socket, client_address):
             if not message:
                 break
 
-            for client in clients:
-
-                if client == client_socket:
-                    continue
-
-                client.send(f'{name}: {message}'.encode('utf-8'))
-
+            broadcast(f'{name}: {message}', client_socket)
             print(f'От {name} пришло:', message)
 
     except:
+        pass
 
+    finally:
         with clients_lock:
             if client_socket in clients:
                 clients.remove(client_socket)
 
+        broadcast(f'{name} отключился')
         client_socket.close()
-
-        for client in clients:
-            client.send(f'{name} отключился'.encode('utf-8'))
-
         print(f'Клиент {name} отключился')
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
